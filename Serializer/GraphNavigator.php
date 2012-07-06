@@ -50,8 +50,12 @@ final class GraphNavigator
             }
 
             $type = gettype($data);
+            
             if ('object' === $type) {
                 $type = get_class($data);
+            } else if ('resource' === $type) {
+                $data = fgets($data);
+                $type = 'string';
             }
         }
 
