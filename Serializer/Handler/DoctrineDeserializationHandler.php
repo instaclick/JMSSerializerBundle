@@ -45,6 +45,36 @@ class DoctrineDeserializationHandler implements DeserializationHandlerInterface
     }
 
     /**
+     * Fetch an existing entity, or instantiate a new one
+     *
+     * @param mixed $objectManager
+     * @param array $data
+     * @param string $type
+     *
+     * @return mixed
+     */
+    private function prepareEntity($objectManager, $type, $data)
+    {
+        $cmf   = $objectManager->getMetadataFactory();
+        $class = $cmf->getMetadataFor($type);
+        $id    = $data;
+
+        if ( ! is_array($id)) {
+            $id = array($class->identifier[0] => $id);
+        }
+
+        foreach ($class->identifier as $identifier) {
+            if (isset($id[$identifier])) {
+                return $objectManager->find($type, $data);
+            }
+        }
+
+        $type = '\\' . $type;
+
+        return new $type;
+    }
+
+    /**
      * Deserialize data returning a Proxy if it is an Entity
      *
      * @param VisitorInterface $visitor
@@ -81,10 +111,10 @@ class DoctrineDeserializationHandler implements DeserializationHandlerInterface
 
         // Loading proxy
         $visited = true;
-        $entity  = $objectManager->find($type, $data);
+        $entity  = $this->prepareEntity($objectManager, $type, $data);
 
         if (!$entity) {
-            throw new RuntimeException(sprintf('Unable to retrieve unexistent entity "%s".', $type));
+            throw new RuntimeException(sprintf('Unable to create or retrieve entity "%s".', $type));
         }
 
         $visitor->setCurrentObject($entity);
