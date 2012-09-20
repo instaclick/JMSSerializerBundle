@@ -53,17 +53,15 @@ class DoctrineDeserializationHandler implements DeserializationHandlerInterface
      */
     private function getIdentifier($class, $data)
     {
-        if (!$class->isIdentifierComposite) {
-            return array($class->identifier[0] => $data[$class->identifier[0]]);
-        }
-
         $id = array();
 
         foreach ($class->identifier as $fieldName) {
-            if (isset($class->associationMappings[$fieldName])) {
-                $id[$fieldName] = $data[$class->associationMappings[$fieldName]['joinColumns'][0]['name']];
-            } else {
-                $id[$fieldName] = $data[$fieldName];
+            $identifier = isset($class->associationMappings[$fieldName])
+                ? $class->associationMappings[$fieldName]['joinColumns'][0]['name']
+                : $fieldName;
+
+            if (isset($data[$identifier])) {
+                $id[$fieldName] = $data[$identifier];
             }
         }
 
@@ -85,8 +83,8 @@ class DoctrineDeserializationHandler implements DeserializationHandlerInterface
         $class = $cmf->getMetadataFor($type);
         $id    = $this->getIdentifier($class, $data);
 
-        if (($obj = $objectManager->find($type, $id)) !== null) {
-            return $obj;
+        if (count($id)) {
+            return $objectManager->find($type, $id);
         }
 
         $type = '\\' . $type;
